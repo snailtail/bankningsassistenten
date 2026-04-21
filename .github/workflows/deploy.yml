@@ -15,9 +15,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            if [ ! -d /opt/bankningsassistenten ]; then
-              git clone git@github.com:${{ github.repository }}.git /opt/bankningsassistenten
+            if [ ! -d ~/bankningsassistenten ]; then
+              git clone git@github.com:${{ github.repository }}.git ~/bankningsassistenten
             fi
-            cd /opt/bankningsassistenten
+            cd ~/bankningsassistenten
             git pull
             docker compose up --build -d
