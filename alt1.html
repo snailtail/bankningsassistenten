@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bankningsassistenten</title>
+<style>
+  :root {
+    --primary: #1a56a0;
+    --primary-light: #e8f0fb;
+    --accent: #f5c518;
+    --accent-light: #fffbe6;
+    --border: #d0d7e3;
+    --text: #1a1a2e;
+    --muted: #6b7a99;
+    --white: #ffffff;
+    --total-bg: #1a56a0;
+    --shadow: 0 2px 16px rgba(26,86,160,0.10);
+    --radius: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #e8f0fb 0%, #f4f7ff 100%);
+    min-height: 100vh;
+    color: var(--text);
+    padding: 20px 12px 40px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin-top: 4px;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 440px;
+  }
+
+  /* Group headers */
+  thead tr:first-child th {
+    padding: 14px 8px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--white);
+    background: var(--primary);
+  }
+  thead tr:first-child th:first-child {
+    background: var(--primary);
+  }
+  thead tr:first-child .th-bank {
+    background: #1a56a0;
+    border-left: 2px solid rgba(255,255,255,0.2);
+  }
+  thead tr:first-child .th-vaxel {
+    background: #2e6cbf;
+    border-left: 2px solid rgba(255,255,255,0.2);
+  }
+
+  /* Column headers */
+  thead tr:last-child th {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f0f4fb;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  thead tr:last-child .sep {
+    border-left: 2px solid var(--border);
+  }
+
+  tbody tr {
+    transition: background 0.15s;
+  }
+  tbody tr:hover {
+    background: #f7faff;
+  }
+  tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #eef1f8;
+    font-size: 0.93rem;
+  }
+  tbody td.valör {
+    font-weight: 600;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+  tbody td.summa {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  tbody td.summa.positive {
+    color: #0a7a3c;
+    font-weight: 600;
+  }
+  tbody td.sep {
+    border-left: 2px solid var(--border);
+  }
+
+  /* Input cell */
+  td.input-cell {
+    padding: 5px 8px;
+  }
+  .num-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-light);
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    padding: 3px 6px;
+    max-width: 110px;
+  }
+  .num-wrap input {
+    width: 48px;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .num-wrap input::-webkit-inner-spin-button,
+  .num-wrap input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .btn-spin {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 5px;
+    background: var(--accent);
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.1s, transform 0.1s;
+    user-select: none;
+  }
+  .btn-spin:active { transform: scale(0.92); background: #e0b000; }
+
+  /* Total row */
+  tfoot tr td {
+    padding: 12px 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    background: var(--primary);
+    color: var(--white);
+    border-top: 2px solid rgba(255,255,255,0.15);
+  }
+  tfoot tr td.summa {
+    color: #ffe878;
+    font-size: 1.05rem;
+  }
+  tfoot tr td.sep {
+    border-left: 2px solid rgba(255,255,255,0.2);
+  }
+
+  /* Reset button */
+  .footer-bar {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+    background: #f7faff;
+  }
+  .btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1.5px solid var(--primary);
+    color: var(--primary);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-reset:hover { background: var(--primary); color: var(--white); }
+  .btn-reset svg { width: 15px; height: 15px; }
+
+  @media (max-width: 500px) {
+    .num-wrap { max-width: 96px; padding: 2px 4px; }
+    .num-wrap input { width: 38px; font-size: 0.88rem; }
+    tbody td { padding: 7px 6px; font-size: 0.85rem; }
+    tfoot tr td { font-size: 0.9rem; padding: 10px 6px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bankningsassistenten</h1>
+  <p>Räkna ihop kontanter för bankinsättning och växelkassa</p>
+</header>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th rowspan="2" style="text-align:left; padding-left:14px;">Valör</th>
+          <th colspan="2" class="th-bank" style="text-align:center;">Bankas</th>
+          <th colspan="2" class="th-vaxel sep" style="text-align:center;">Växelkassa</th>
+        </tr>
+        <tr>
+          <th style="text-align:center;">Antal</th>
+          <th style="text-align:right; padding-right:14px;">Summa</th>
+          <th class="sep" style="text-align:center;">Antal</th>
+          <th style="text-align:right; padding-right:14px;">Summa</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" style="padding-left:14px;">Totalt</td>
+          <td class="summa" id="total-bank" style="padding-right:14px;"></td>
+          <td class="sep"></td>
+          <td class="summa" id="total-vaxel" style="padding-right:14px;"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="footer-bar">
+    <button class="btn-reset" onclick="resetAll()">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 10a6.5 6.5 0 1 1 1.2 3.8"/>
+        <polyline points="1 8 3.5 10.5 6 8"/>
+      </svg>
+      Nollställ
+    </button>
+  </div>
+</div>
+
+<script>
+const DENOMINATIONS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+
+function fmt(n) {
+  return n.toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr';
+}
+
+function buildRows() {
+  const tbody = document.getElementById('rows');
+  DENOMINATIONS.forEach(val => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="valör" style="padding-left:14px;">${val.toLocaleString('sv-SE', {minimumFractionDigits: 2})} kr</td>
+      <td class="input-cell">
+        <div class="num-wrap">
+          <button class="btn-spin" onclick="adjust('bank',${val},-1)">−</button>
+          <input type="number" id="bank-${val}" min="0" value="0"
+            oninput="sanitize(this); calc()" onchange="calc()">
+          <button class="btn-spin" onclick="adjust('bank',${val},1)">+</button>
+        </div>
+      </td>
+      <td class="summa" id="sum-bank-${val}" style="padding-right:14px;">0,00 kr</td>
+      <td class="input-cell sep">
+        <div class="num-wrap">
+          <button class="btn-spin" onclick="adjust('vaxel',${val},-1)">−</button>
+          <input type="number" id="vaxel-${val}" min="0" value="0"
+            oninput="sanitize(this); calc()" onchange="calc()">
+          <button class="btn-spin" onclick="adjust('vaxel',${val},1)">+</button>
+        </div>
+      </td>
+      <td class="summa" id="sum-vaxel-${val}" style="padding-right:14px;">0,00 kr</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function sanitize(inp) {
+  inp.value = inp.value.replace(/[^0-9]/g, '');
+  if (inp.value === '' || parseInt(inp.value) < 0) inp.value = '0';
+}
+
+function adjust(type, val, delta) {
+  const inp = document.getElementById(`${type}-${val}`);
+  const cur = parseInt(inp.value) || 0;
+  inp.value = Math.max(0, cur + delta);
+  calc();
+}
+
+function calc() {
+  let totalBank = 0, totalVaxel = 0;
+  DENOMINATIONS.forEach(val => {
+    const b = parseInt(document.getElementById(`bank-${val}`).value) || 0;
+    const v = parseInt(document.getElementById(`vaxel-${val}`).value) || 0;
+    const sb = b * val, sv = v * val;
+    totalBank += sb; totalVaxel += sv;
+    const sbEl = document.getElementById(`sum-bank-${val}`);
+    const svEl = document.getElementById(`sum-vaxel-${val}`);
+    sbEl.textContent = fmt(sb);
+    svEl.textContent = fmt(sv);
+    sbEl.className = 'summa' + (sb > 0 ? ' positive' : '');
+    svEl.className = 'summa' + (sv > 0 ? ' positive' : '');
+  });
+  document.getElementById('total-bank').textContent = fmt(totalBank);
+  document.getElementById('total-vaxel').textContent = fmt(totalVaxel);
+}
+
+function resetAll() {
+  DENOMINATIONS.forEach(val => {
+    document.getElementById(`bank-${val}`).value = 0;
+    document.getElementById(`vaxel-${val}`).value = 0;
+  });
+  calc();
+}
+
+buildRows();
+calc();
+</script>
+</body>
+</html>
