@@ -1,23 +1,77 @@
-name: Deploy
+name: Deploy to Server
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check deploy secrets
+        id: secrets
+        run: |
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Missing SSH secrets. Skipping deployment."
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+
+      - name: Set up SSH agent
+        if: steps.secrets.outputs.skip != 'true'
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            if [ ! -d ~/bankningsassistenten ]; then
-              git clone git@github.com:${{ github.repository }}.git ~/bankningsassistenten
-            fi
-            cd ~/bankningsassistenten
-            git pull
-            docker compose up --build -d
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add host to known_hosts
+        if: steps.secrets.outputs.skip != 'true'
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      - name: Ensure remote directory
+        if: steps.secrets.outputs.skip != 'true'
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/bankningsassistenten"
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+
+      - name: Sync repository
+        if: steps.secrets.outputs.skip != 'true'
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.DS_Store' \
+            ./ "$SSH_USER@$SSH_HOST:~/bankningsassistenten/"
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+
+      - name: Restart services
+        if: steps.secrets.outputs.skip != 'true'
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" "cd ~/bankningsassistenten && docker compose up --build -d"
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
